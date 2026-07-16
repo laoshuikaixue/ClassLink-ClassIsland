@@ -4,7 +4,7 @@ description: 在 ClassIsland 显示受支持播放器的高级歌词、封面与
 entranceAssembly: "ClassLink.dll"
 url: https://github.com/laoshuikaixue/ClassLink-ClassIsland
 apiVersion: 2.0.0.1
-version: 1.0.0.0
+version: 1.0.0.1
 author: laoshuikaixue
 readme: README.md
 icon: icon.png
