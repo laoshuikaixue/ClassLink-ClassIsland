@@ -1,0 +1,108 @@
+<ci:SettingsPageBase x:Class="ClassLink.Settings.ClassLinkSettingsPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="using:FluentAvalonia.UI.Controls"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     mc:Ignorable="d"
+                     d:DesignWidth="900"
+                     d:DesignHeight="720"
+                     TextElement.Foreground="{DynamicResource MaterialDesignBody}">
+  <ScrollViewer>
+    <StackPanel Classes="settings-container animated-intro"
+                MaxWidth="920"
+                HorizontalAlignment="Stretch">
+      <ci:IconText Glyph="&#xE8D6;" Text="本机连接" Margin="0,0,0,10" />
+
+      <controls:InfoBar x:Name="ListenerInfoBar"
+                        IsOpen="True"
+                        IsClosable="False"
+                        Severity="Informational"
+                        Margin="0,0,0,14" />
+
+      <Border Padding="18"
+              Margin="0,0,0,14"
+              CornerRadius="6"
+              BorderThickness="1"
+              BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+              Background="{DynamicResource MaterialDesignCardBackground}">
+        <StackPanel Spacing="16">
+          <StackPanel Spacing="4">
+            <TextBlock Text="监听端点" FontSize="17" FontWeight="SemiBold" />
+            <TextBlock Text="仅绑定到本机回环地址，其他设备无法访问。修改端口后监听服务会自动重启。"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource MaterialDesignBodyLight}" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,180">
+            <StackPanel VerticalAlignment="Center" Spacing="3">
+              <TextBlock Text="端口" FontWeight="Medium" />
+              <TextBlock x:Name="EndpointText"
+                         Foreground="{DynamicResource MaterialDesignBodyLight}" />
+            </StackPanel>
+            <TextBox x:Name="PortBox"
+                     Grid.Column="1"
+                     HorizontalAlignment="Stretch"
+                     VerticalContentAlignment="Center"
+                     Watermark="1024–65535" />
+          </Grid>
+          <TextBlock x:Name="PortValidationText"
+                     Text="请输入 1024–65535 之间的有效端口。"
+                     IsVisible="False"
+                     TextWrapping="Wrap"
+                     Foreground="#E74856" />
+        </StackPanel>
+      </Border>
+
+      <Border Padding="18"
+              Margin="0,0,0,14"
+              CornerRadius="6"
+              BorderThickness="1"
+              BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+              Background="{DynamicResource MaterialDesignCardBackground}">
+        <StackPanel Spacing="12">
+          <StackPanel Spacing="4">
+            <TextBlock Text="连接令牌" FontSize="17" FontWeight="SemiBold" />
+            <TextBlock Text="播放器必须携带此令牌才能向 ClassIsland 推送歌词和封面。"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource MaterialDesignBodyLight}" />
+          </StackPanel>
+          <TextBox x:Name="TokenBox"
+                   IsReadOnly="True"
+                   HorizontalAlignment="Stretch" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="CopyTokenButton" Content="复制令牌" />
+            <Button x:Name="RegenerateTokenButton" Content="重新生成" />
+          </StackPanel>
+          <TextBlock Text="重新生成后，所有已连接播放器都需要填写新令牌。"
+                     Foreground="{DynamicResource MaterialDesignBodyLight}" />
+        </StackPanel>
+      </Border>
+
+      <Border Padding="18"
+              Margin="0,0,0,14"
+              CornerRadius="6"
+              BorderThickness="1"
+              BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+              Background="{DynamicResource MaterialDesignCardBackground}">
+        <StackPanel Spacing="12">
+          <TextBlock Text="连接状态" FontSize="17" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="120,*"
+                RowDefinitions="Auto,Auto,Auto,Auto"
+                RowSpacing="9">
+            <TextBlock Grid.Row="0" Text="播放器连接" Foreground="{DynamicResource MaterialDesignBodyLight}" />
+            <TextBlock x:Name="ConnectionStatusText" Grid.Row="0" Grid.Column="1" FontWeight="Medium" />
+            <TextBlock Grid.Row="1" Text="活动播放器" Foreground="{DynamicResource MaterialDesignBodyLight}" />
+            <TextBlock x:Name="ActivePlayerText" Grid.Row="1" Grid.Column="1" />
+            <TextBlock Grid.Row="2" Text="最后通信" Foreground="{DynamicResource MaterialDesignBodyLight}" />
+            <TextBlock x:Name="LastSeenText" Grid.Row="2" Grid.Column="1" />
+            <TextBlock Grid.Row="3" Text="协议版本" Foreground="{DynamicResource MaterialDesignBodyLight}" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="ClassLink v1" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</ci:SettingsPageBase>
