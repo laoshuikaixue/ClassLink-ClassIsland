@@ -114,3 +114,11 @@ public sealed class CoverMetadataMessage
   public string Hash { get; init; } = string.Empty;
   public string MimeType { get; init; } = "image/jpeg";
 }
+
+public sealed class ClassLinkResponseMessage
+{
+  public string Message { get; init; } = string.Empty;
+
+  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+  public bool? CoverRequired { get; init; }
+}

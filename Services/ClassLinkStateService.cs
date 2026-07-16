@@ -19,6 +19,8 @@ public sealed class ClassLinkStateService
   private long _lastStateRevision = -1;
   private long _lastAnchorSequence = -1;
   private long _lastCoverRevision = -1;
+  private string? _coverHash;
+  private string? _coverMimeType;
   private DateTime _lastSeenUtc = DateTime.MinValue;
   private bool _reportedConnected;
   private ClassLinkRuntimeSnapshot? _current;
@@ -87,8 +89,7 @@ public sealed class ClassLinkStateService
         var previousTrackKey = _current?.State.TrackKey;
         if (replaced)
         {
-          coverToDispose = _cover;
-          _cover = null;
+          coverToDispose = ClearCoverCore();
         }
         _lastStateRevision = message.StateRevision;
         _lastSeenUtc = DateTime.UtcNow;
@@ -97,15 +98,26 @@ public sealed class ClassLinkStateService
         if (!string.Equals(previousTrackKey, message.TrackKey, StringComparison.Ordinal) ||
             message.Cover == null)
         {
-          coverToDispose ??= _cover;
-          _cover = null;
-          _lastCoverRevision = -1;
+          coverToDispose ??= ClearCoverCore();
         }
       }
     }
 
     RaiseChanged(coverToDispose);
     return true;
+  }
+
+  public bool NeedsCurrentCover()
+  {
+    lock (_gate)
+    {
+      var metadata = _current?.State.Cover;
+      return metadata != null &&
+             (_cover == null ||
+              metadata.Revision != _lastCoverRevision ||
+              !string.Equals(metadata.Hash, _coverHash, StringComparison.OrdinalIgnoreCase) ||
+              !string.Equals(metadata.MimeType, _coverMimeType, StringComparison.OrdinalIgnoreCase));
+    }
   }
 
   public bool ApplyAnchor(AnchorMessage message)
@@ -149,7 +161,10 @@ public sealed class ClassLinkStateService
           !string.Equals(hash, _current.State.Cover?.Hash, StringComparison.OrdinalIgnoreCase) ||
           !string.Equals(mimeType, _current.State.Cover?.MimeType, StringComparison.OrdinalIgnoreCase))
         return false;
-      if (revision == _lastCoverRevision)
+      if (revision == _lastCoverRevision &&
+          _cover != null &&
+          string.Equals(hash, _coverHash, StringComparison.OrdinalIgnoreCase) &&
+          string.Equals(mimeType, _coverMimeType, StringComparison.OrdinalIgnoreCase))
       {
         _lastSeenUtc = DateTime.UtcNow;
         _reportedConnected = true;
@@ -191,7 +206,10 @@ public sealed class ClassLinkStateService
         return false;
       }
 
-      if (revision == _lastCoverRevision)
+      if (revision == _lastCoverRevision &&
+          _cover != null &&
+          string.Equals(hash, _coverHash, StringComparison.OrdinalIgnoreCase) &&
+          string.Equals(mimeType, _coverMimeType, StringComparison.OrdinalIgnoreCase))
       {
         bitmap.Dispose();
         _lastSeenUtc = DateTime.UtcNow;
@@ -204,6 +222,8 @@ public sealed class ClassLinkStateService
         _reportedConnected = true;
         oldCover = _cover;
         _cover = bitmap;
+        _coverHash = hash;
+        _coverMimeType = mimeType;
       }
     }
 
@@ -297,6 +317,16 @@ public sealed class ClassLinkStateService
 
   private bool IsConnectedCore(DateTime now) =>
       _lastSeenUtc != DateTime.MinValue && now - _lastSeenUtc <= ConnectionTimeout;
+
+  private Bitmap? ClearCoverCore()
+  {
+    var cover = _cover;
+    _cover = null;
+    _lastCoverRevision = -1;
+    _coverHash = null;
+    _coverMimeType = null;
+    return cover;
+  }
 
   private void RaiseChanged(Bitmap? disposeAfterUpdate = null)
   {

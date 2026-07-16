@@ -11,6 +11,8 @@ namespace ClassLink.Services;
 
 public sealed class ClassLinkServer : BackgroundService
 {
+  private sealed record StateResult(bool Accepted, bool CoverRequired);
+
   private const int MaxStateBytes = 4 * 1024 * 1024;
   private const int MaxCoverBytes = 2 * 1024 * 1024;
   private static readonly HashSet<string> SupportedCoverTypes =
@@ -210,9 +212,20 @@ public sealed class ClassLinkServer : BackgroundService
         return;
       }
 
-      var accepted = context.Request.Url?.AbsolutePath switch
+      var path = context.Request.Url?.AbsolutePath;
+      if (path == "/v1/state")
       {
-        "/v1/state" => await HandleStateAsync(context.Request, cancellationToken),
+        var result = await HandleStateAsync(context.Request, cancellationToken);
+        await WriteResponseAsync(
+            context.Response,
+            result.Accepted ? HttpStatusCode.OK : HttpStatusCode.Conflict,
+            result.Accepted ? "ok" : "stale_or_invalid",
+            result.Accepted ? result.CoverRequired : null);
+        return;
+      }
+
+      var accepted = path switch
+      {
         "/v1/anchor" => await HandleAnchorAsync(context.Request, cancellationToken),
         "/v1/cover" => await HandleCoverAsync(context.Request, cancellationToken),
         "/v1/heartbeat" => await HandleHeartbeatAsync(context.Request, cancellationToken),
@@ -238,11 +251,14 @@ public sealed class ClassLinkServer : BackgroundService
     }
   }
 
-  private async Task<bool> HandleStateAsync(HttpListenerRequest request, CancellationToken cancellationToken)
+  private async Task<StateResult> HandleStateAsync(
+      HttpListenerRequest request,
+      CancellationToken cancellationToken)
   {
-    if (!HasContentType(request, "application/json")) return false;
+    if (!HasContentType(request, "application/json")) return new StateResult(false, false);
     var message = await ReadJsonAsync<StateMessage>(request, MaxStateBytes, cancellationToken);
-    return message != null && _state.ApplyState(message);
+    if (message == null || !_state.ApplyState(message)) return new StateResult(false, false);
+    return new StateResult(true, _state.NeedsCurrentCover());
   }
 
   private async Task<bool> HandleAnchorAsync(HttpListenerRequest request, CancellationToken cancellationToken)
@@ -328,12 +344,17 @@ public sealed class ClassLinkServer : BackgroundService
   private static async Task WriteResponseAsync(
       HttpListenerResponse response,
       HttpStatusCode status,
-      string message)
+      string message,
+      bool? coverRequired = null)
   {
     try
     {
       if (!response.OutputStream.CanWrite) return;
-      var body = JsonSerializer.SerializeToUtf8Bytes(new { message }, JsonOptions);
+      var body = JsonSerializer.SerializeToUtf8Bytes(new ClassLinkResponseMessage
+      {
+        Message = message,
+        CoverRequired = coverRequired
+      }, JsonOptions);
       response.StatusCode = (int)status;
       response.ContentType = "application/json; charset=utf-8";
       response.ContentLength64 = body.Length;
